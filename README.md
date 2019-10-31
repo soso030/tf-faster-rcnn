@@ -130,7 +130,7 @@ If you find it useful, the ``data/cache`` folder created on my side is also shar
   ```Shell
   # at repository root
   GPU_ID=0
-  CUDA_VISIBLE_DEVICES=${GPU_ID} ./tools/demo.py
+  CUDA_VISIBLE_DEVICES=${GPU_ID} python3 ./tools/demo.py
   ```
   **Note**: Resnet101 testing probably requires several gigabytes of memory, so if you encounter memory capacity issues, please install it with CPU support only. Refer to [Issue 25](https://github.com/endernewton/tf-faster-rcnn/issues/25).
 

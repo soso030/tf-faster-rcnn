@@ -74,15 +74,18 @@ Additional features not mentioned in the [report](https://arxiv.org/pdf/1702.021
   | ------------- | ------------- |
   | TitanX (Maxwell/Pascal) | sm_52 |
   | GTX 960M | sm_50 |
+  | GTX 1070 (Ti) | sm_61 |
   | GTX 1080 (Ti) | sm_61 |
   | Grid K520 (AWS g2.2xlarge) | sm_30 |
   | Tesla K80 (AWS p2.xlarge) | sm_37 |
+  | Tesla V100 32GB | sm_70|
 
   **Note**: You are welcome to contribute the settings on your end if you have made the code work properly on other GPUs. Also even if you are only using CPU tensorflow, GPU based code (for NMS) will be used by default, so please set **USE_GPU_NMS False** to get the correct output.
 
 
 3. Build the Cython modules
   ```Shell
+  /lib/Makefile 에서 python -> python3로 변경
   make clean
   make
   cd ..
@@ -93,6 +96,7 @@ Additional features not mentioned in the [report](https://arxiv.org/pdf/1702.021
   cd data
   git clone https://github.com/pdollar/coco.git
   cd coco/PythonAPI
+  Makefile 에서 python -> python3로 변경
   make
   cd ../../..
   ```

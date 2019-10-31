@@ -22,6 +22,10 @@ from model.nms_wrapper import nms
 
 from utils.timer import Timer
 import tensorflow as tf
+
+import matplotlib
+matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 import numpy as np
 import os, cv2
@@ -40,7 +44,7 @@ CLASSES = ('__background__',
 NETS = {'vgg16': ('vgg16_faster_rcnn_iter_70000.ckpt',),'res101': ('res101_faster_rcnn_iter_110000.ckpt',)}
 DATASETS= {'pascal_voc': ('voc_2007_trainval',),'pascal_voc_0712': ('voc_2007_trainval+voc_2012_trainval',)}
 
-def vis_detections(im, class_name, dets, thresh=0.5):
+def vis_detections(imgfilename, im, class_name, dets, dest_path, thresh=0.5):
     """Draw detected bounding boxes."""
     inds = np.where(dets[:, -1] >= thresh)[0]
     if len(inds) == 0:
@@ -71,33 +75,38 @@ def vis_detections(im, class_name, dets, thresh=0.5):
     plt.axis('off')
     plt.tight_layout()
     plt.draw()
+    plt.savefig(os.path.join(dest_path, "result_"+ imgfilename), dpi=300)
 
-def demo(sess, net, image_name):
+def demo(sess, net, src_path, dest_path):
     """Detect object classes in an image using pre-computed object proposals."""
+    im_files = os.listdir(src_path)
+    
+    for im_file in im_files:
+        if not im_file.endswith(".jpg"):
+            continue
+        # Load the demo image
+#         im_file = os.path.join(cfg.DATA_DIR, 'demo', image_name)
+        im = cv2.imread(os.path.join(src_path,im_file))
 
-    # Load the demo image
-    im_file = os.path.join(cfg.DATA_DIR, 'demo', image_name)
-    im = cv2.imread(im_file)
+        # Detect all object classes and regress object bounds
+        timer = Timer()
+        timer.tic()
+        scores, boxes = im_detect(sess, net, im)
+        timer.toc()
+        print('Detection took {:.3f}s for {:d} object proposals'.format(timer.total_time, boxes.shape[0]))
 
-    # Detect all object classes and regress object bounds
-    timer = Timer()
-    timer.tic()
-    scores, boxes = im_detect(sess, net, im)
-    timer.toc()
-    print('Detection took {:.3f}s for {:d} object proposals'.format(timer.total_time, boxes.shape[0]))
-
-    # Visualize detections for each class
-    CONF_THRESH = 0.8
-    NMS_THRESH = 0.3
-    for cls_ind, cls in enumerate(CLASSES[1:]):
-        cls_ind += 1 # because we skipped background
-        cls_boxes = boxes[:, 4*cls_ind:4*(cls_ind + 1)]
-        cls_scores = scores[:, cls_ind]
-        dets = np.hstack((cls_boxes,
-                          cls_scores[:, np.newaxis])).astype(np.float32)
-        keep = nms(dets, NMS_THRESH)
-        dets = dets[keep, :]
-        vis_detections(im, cls, dets, thresh=CONF_THRESH)
+        # Visualize detections for each class
+        CONF_THRESH = 0.8
+        NMS_THRESH = 0.3
+        for cls_ind, cls in enumerate(CLASSES[1:]):
+            cls_ind += 1 # because we skipped background
+            cls_boxes = boxes[:, 4*cls_ind:4*(cls_ind + 1)]
+            cls_scores = scores[:, cls_ind]
+            dets = np.hstack((cls_boxes,
+                              cls_scores[:, np.newaxis])).astype(np.float32)
+            keep = nms(dets, NMS_THRESH)
+            dets = dets[keep, :]
+            vis_detections(im_file, im, cls, dets, dest_path, thresh=CONF_THRESH)
 
 def parse_args():
     """Parse input arguments."""
@@ -144,12 +153,26 @@ if __name__ == '__main__':
     saver.restore(sess, tfmodel)
 
     print('Loaded network {:s}'.format(tfmodel))
+    
+    src = os.path.join(os.getcwd(), "data", "demo")
+    dest = os.path.join(os.getcwd(), "data", "demo_result")
+    print("source for demo path : " + src)
+    print("destination for demo path : " + dest)
+    
+    assert os.path.exists(os.path.join(os.getcwd(), "data", "demo"))
+    assert os.path.exists(os.path.join(os.getcwd(), "data", "demo_result")) 
+    
+    print("source & destination path for demo have no problem")
+    
+#     src_path = "/notebooks/02.lhs/new_dev/tf-faster-rcnn/data/demo"
+#     dest_path = "/notebooks/02.lhs/new_dev/tf-faster-rcnn/data/demo_result"
+    demo(sess, net, src, dest)
 
-    im_names = ['000456.jpg', '000542.jpg', '001150.jpg',
-                '001763.jpg', '004545.jpg']
-    for im_name in im_names:
-        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-        print('Demo for data/demo/{}'.format(im_name))
-        demo(sess, net, im_name)
+#     im_names = ['000456.jpg', '000542.jpg', '001150.jpg',
+#                 '001763.jpg', '004545.jpg']
+#     for im_name in im_names:
+#         print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+#         print('Demo for data/demo/{}'.format(im_name))
+#         demo(sess, net, im_name)
 
-    plt.show()
+#     plt.show()
